@@ -1,0 +1,77 @@
+{
+  "courses": [
+    {
+      "name": "City of Westminster (Walnut Creek / Legacy Ridge)",
+      "platform": "cps-golf",
+      "subdomain": "cityofwestminster",
+      "url": "https://cityofwestminster.cps.golf/onlineresweb/search-teetime"
+    },
+    {
+      "name": "Indian Tree",
+      "platform": "cps-golf",
+      "subdomain": "indiantree",
+      "url": "https://indiantree.cps.golf/onlineresweb/search-teetime"
+    },
+    {
+      "name": "West Woods",
+      "platform": "cps-golf",
+      "subdomain": "westwoodsarvada",
+      "url": "https://westwoodsarvada.cps.golf/onlineresweb/search-teetime",
+      "requires_login": true
+    },
+    {
+      "name": "Hyland Hills",
+      "platform": "teeitup",
+      "subdomain": "hyland-hills-park-recreation-district",
+      "url": "https://hyland-hills-park-recreation-district.book.teeitup.com/"
+    },
+    {
+      "name": "Common Ground",
+      "platform": "teeitup",
+      "subdomain": "commonground-golf-course",
+      "course_id": 5275,
+      "url": "https://commonground-golf-course.book.teeitup.com/?course=5275"
+    },
+    {
+      "name": "Riverdale",
+      "platform": "teeitup",
+      "subdomain": "riverdale",
+      "url": "https://riverdale.book.teeitup.com/"
+    },
+    {
+      "name": "Denver Muni (Wellshire, City Park, Willis Case, Overland, Kennedy, Harvard Gulch)",
+      "platform": "membersports",
+      "org_id": 3831,
+      "facility_id": 4928,
+      "url": "https://app.membersports.com/tee-times/3831/4928/0/1/0"
+    },
+    {
+      "name": "Foothills (Foothills GC, Meadows)",
+      "platform": "membersports",
+      "org_id": 3697,
+      "facility_id": 4759,
+      "url": "https://app.membersports.com/tee-times/3697/4759/0/3/false"
+    },
+    {
+      "name": "Broken Tee Englewood",
+      "platform": "membersports",
+      "org_id": 3689,
+      "facility_id": 4748,
+      "url": "https://app.membersports.com/tee-times/3689/4748/0/0/0"
+    },
+    {
+      "name": "Applewood",
+      "platform": "clubcaddie",
+      "view_id": "hbfdabab",
+      "url": "https://apimanager-cc11.clubcaddie.com/webapi/view/hbfdabab"
+    },
+    {
+      "name": "City of Aurora (Aurora Hills, Meadow Hills, Murphy Creek, Saddle Rock, Springhill)",
+      "platform": "ezlinks",
+      "subdomain": "cityofaurora",
+      "url": "https://cityofaurora.ezlinksgolf.com/index.html#/search",
+      "requires_login": true,
+      "cloudflare_blocked": true
+    }
+  ]
+}
