@@ -42,10 +42,14 @@ Where things stand right now:
 - Any open questions or known gaps
 
 ### 5. Next step (imperative)
-A clear, single instruction for what the fresh session should do first. Not a menu of options -- one concrete action. Examples:
-- "Read the plan at `docs/superpowers/plans/...` and execute it using subagent-driven-development."
-- "Create a worktree from main and begin Task 1 of the plan."
+A clear, single instruction for what the fresh session should do first. Not a menu of options -- one concrete action.
+
+**Worktree guidance:** If the next step involves multi-task feature implementation (3+ tasks, new files, schema changes), the prompt must instruct the fresh session to create a git worktree first. Feature work happens on branches, not main. Include the branch name in the prompt (e.g. "feat/invites").
+
+Examples:
+- "Create a git worktree for this feature (branch: feat/invites), then read the plan at `docs/superpowers/plans/...` and execute it using subagent-driven-development."
 - "Run the test suite and fix any failures from the last session's changes."
+- "Read the plan at `docs/superpowers/plans/...` and execute the remaining tasks (3-6) using subagent-driven-development." (worktree already exists)
 
 ## How to generate the prompt
 
