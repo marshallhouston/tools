@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+API="https://api.honeycomb.io"
+DATASET="preach-hub"
+
+get_key() {
+  security find-generic-password -a honeycomb -s honeycomb-config-key -w 2>/dev/null \
+    || { echo "Error: no honeycomb key in keychain. Run:" >&2
+         echo "  security add-generic-password -a honeycomb -s honeycomb-config-key -w YOUR_SECRET" >&2
+         exit 1; }
+}
+
+hc_curl() {
+  local key
+  key=$(get_key)
+  curl -s -H "X-Honeycomb-Team: $key" "$@"
+}
+
+cmd_status() {
+  hc_curl "$API/1/datasets" | python3 -c "
+import sys, json
+for d in json.load(sys.stdin):
+    print(f\"{d['name']}  columns: {d['regular_columns_count']}  last write: {d['last_written_at']}\")
+"
+}
+
+cmd_columns() {
+  local dataset="${1:-$DATASET}"
+  hc_curl "$API/1/columns/$dataset" | python3 -c "
+import sys, json
+cols = json.load(sys.stdin)
+cols.sort(key=lambda c: c['key_name'])
+for c in cols:
+    desc = c.get('description', '') or ''
+    typ = c.get('type', '')
+    print(f\"  {c['key_name']:<30} {typ:<10} {desc}\")
+"
+}
+
+cmd_marker() {
+  local msg="${1:-deploy}"
+  local type="${2:-deploy}"
+  local key
+  key=$(get_key)
+  curl -s -X POST "$API/1/markers/$DATASET" \
+    -H "X-Honeycomb-Team: $key" \
+    -H "Content-Type: application/json" \
+    -d "{\"message\": \"$msg\", \"type\": \"$type\"}" | python3 -c "
+import sys, json
+m = json.load(sys.stdin)
+print(f\"Marker created: {m.get('message', '')} (type: {m.get('type', '')}, id: {m.get('id', '')})\")
+"
+}
+
+cmd_markers() {
+  hc_curl "$API/1/markers/$DATASET" | python3 -c "
+import sys, json
+markers = json.load(sys.stdin)
+if not markers:
+    print('  No markers found')
+    sys.exit(0)
+for m in markers[-10:]:
+    print(f\"  {m.get('created_at', '')[:19]}  {m.get('type', ''):<10}  {m.get('message', '')}\")
+"
+}
+
+cmd_help() {
+  cat <<'USAGE'
+honeycomb -- query Honeycomb from the command line
+
+Commands:
+  status              Show datasets, column counts, last write time
+  columns [dataset]   List columns in a dataset (default: preach-hub)
+  marker "msg" [type] Create a marker (default type: deploy)
+  markers             List recent markers
+  help                Show this help
+
+Auth: reads API key from macOS keychain (honeycomb-config-key).
+
+Examples:
+  honeycomb status
+  honeycomb columns
+  honeycomb marker "shipped stream 9" deploy
+  honeycomb markers
+USAGE
+}
+
+case "${1:-help}" in
+  status)  cmd_status ;;
+  columns) cmd_columns "${2:-}" ;;
+  marker)  cmd_marker "${2:-deploy}" "${3:-deploy}" ;;
+  markers) cmd_markers ;;
+  help|*)  cmd_help ;;
+esac
