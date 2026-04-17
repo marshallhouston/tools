@@ -1,6 +1,6 @@
 ---
 name: capture
-description: "Capture brain dumps, article links, and thoughts into the structured knowledge store. Use when the user says 'capture', '/capture', 'brain dump', 'save this thought', 'save this link', 'capture this', or wants to save an idea, article, or reflection for later use. With 'pull' arg, batch-imports from a Slack self-DM channel (requires Slack MCP)."
+description: "Capture brain dumps, article links, and thoughts into the structured knowledge store. Use when the user says 'capture', '/capture', 'brain dump', 'save this thought', 'save this link', 'capture this', 'log this thought', 'jot this down', 'note this down', 'stash this', 'remember this', 'file this', 'dump this', or otherwise wants to save an idea, article, quote, or reflection for later use. With 'pull' arg, batch-imports from a Slack self-DM channel (requires Slack MCP)."
 args: "[url-or-text | pull]"
 ---
 

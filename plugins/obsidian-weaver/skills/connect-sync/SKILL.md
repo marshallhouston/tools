@@ -1,6 +1,6 @@
 ---
 name: connect-sync
-description: "Sync recent Obsidian notes into the _connections/ knowledge graph. Scans modified files for themes, people, concerns, and decisions, then updates connection pages with new source links. Use when the user says 'sync connections', 'connect-sync', 'update connections', 'sync my notes', or after meetings to keep the knowledge graph current. Also invoked automatically by scheduled triggers."
+description: "Sync recent Obsidian notes into the _connections/ knowledge graph. Scans modified files for themes, people, concerns, and decisions, then updates connection pages with new source links. Use when the user says 'sync connections', 'connect-sync', 'update connections', 'sync my notes', 'weave my notes', 'weave the graph', 'crosslink my notes', 'link my notes', 'rebuild the graph', 'refresh connections', or after meetings to keep the knowledge graph current. Also invoked automatically by scheduled triggers."
 args: "[today | file <path> | deep | since <date>]"
 ---
 

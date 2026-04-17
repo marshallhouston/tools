@@ -1,6 +1,6 @@
 ---
 name: today
-description: "Daily note creator — calendar sync, carryover items from previous days, and meeting file setup. Use when the user says 'today', '/today', 'daily note', 'start my day', 'morning planning', or any variation of wanting to set up their day."
+description: "Daily note creator and status surface — calendar sync, carryover items from previous days, and meeting file setup. Use when the user says 'today', '/today', 'daily note', 'start my day', 'morning planning', 'plan my day', 'what's on my plate today', 'what do I have going on today', 'what's on the docket', 'open today's note', or otherwise wants to see or set up their day."
 args: "[quick]"
 ---
 
