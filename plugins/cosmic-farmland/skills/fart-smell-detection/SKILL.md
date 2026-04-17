@@ -6,7 +6,7 @@ argument-hint: "[level] [target]  e.g. 'huff PR #42', 'sniff main..HEAD', 'dutch
 
 # Fart-Smell Detection -- PTVM Audit
 
-Skeptically review a batch of changes. Prove every commit earns its keep. Kill the cologne-sniffing ones.
+Skeptically review a batch of changes to snuff out the fluff. Prove every commit earns its keep and has value. Kill the ones that are farts masquerading as cologne. YAGNI
 
 ## When to use
 
