@@ -178,6 +178,10 @@ if command -v railway >/dev/null 2>&1; then
     ok "Domain assigned"
 
     echo ""
+    warn "IMPORTANT: In Railway dashboard, set Start Command to 'bun run start'"
+    warn "  Service Settings → Deploy → Start Command → bun run start"
+    warn "  Without this, Railway may auto-detect the wrong entry point."
+    echo ""
     warn "To enable auto-deploy: Railway dashboard → Service Settings → Source → Connect GitHub repo"
   fi
 else
