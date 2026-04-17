@@ -23,7 +23,6 @@ Usage:
     python3 connect-sync.py --deep --today     # Deep mode: flag files for LLM review
 """
 
-import errno
 import json
 import os
 import re
@@ -103,38 +102,19 @@ def atomic_write(path, data):
         raise
 
 
-def _try_create_lock():
-    """Atomically create LOCKFILE. Returns True on success, False if it already exists."""
-    payload = json.dumps({'pid': os.getpid(), 'started': datetime.now().isoformat()})
-    try:
-        fd = os.open(LOCKFILE, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
-    except FileExistsError:
-        return False
-    except OSError as e:
-        if e.errno == errno.EEXIST:
-            return False
-        raise
-    with os.fdopen(fd, 'w') as f:
-        f.write(payload)
-    return True
-
-
 def acquire_lock():
     """Try to acquire the sync lock. Returns True if acquired, False if another sync is running."""
-    if _try_create_lock():
-        return True
-    # Existed — check staleness. One retry after unlinking a stale lock.
-    try:
-        lock_age = time.time() - os.path.getmtime(LOCKFILE)
-    except OSError:
-        return False
-    if lock_age < LOCK_TTL:
-        return False
-    try:
-        os.unlink(LOCKFILE)
-    except OSError:
-        pass
-    return _try_create_lock()
+    if os.path.exists(LOCKFILE):
+        try:
+            lock_age = time.time() - os.path.getmtime(LOCKFILE)
+            if lock_age < LOCK_TTL:
+                return False  # Another sync is actively running
+            # Stale lock — previous run crashed or timed out, safe to take over
+        except OSError:
+            pass
+    with open(LOCKFILE, 'w') as f:
+        f.write(json.dumps({'pid': os.getpid(), 'started': datetime.now().isoformat()}))
+    return True
 
 
 def release_lock():
@@ -145,30 +125,9 @@ def release_lock():
         pass
 
 
-_WINDOWS_RESERVED = {
-    'CON', 'PRN', 'AUX', 'NUL',
-    *(f'COM{i}' for i in range(1, 10)),
-    *(f'LPT{i}' for i in range(1, 10)),
-}
-
-
 def safe_connection_filename(name):
-    """Sanitize a canonical entity name into a filesystem-safe filename (no extension).
-    Allowlist-based: any char outside [A-Za-z0-9 _\\-\\.] becomes '-'. Rejects empty,
-    '.', '..', and Windows reserved names to prevent path-traversal and reserved-name
-    surprises when an adversary-influenced string reaches the filesystem."""
-    cleaned = re.sub(r'[^A-Za-z0-9 _\-\.]', '-', name).strip('. ')
-    if not cleaned or cleaned in ('.', '..') or cleaned.upper() in _WINDOWS_RESERVED:
-        raise ValueError(f'invalid connection filename: {name!r}')
-    return cleaned
-
-
-def assert_inside_vault(p):
-    """Raise ValueError if `p` (after realpath) is not the vault itself or inside it."""
-    rp = os.path.realpath(p)
-    rv = os.path.realpath(VAULT)
-    if not (rp == rv or rp.startswith(rv + os.sep)):
-        raise ValueError(f'path escapes vault: {p}')
+    """Sanitize a canonical entity name into a filesystem-safe filename (no extension)."""
+    return name.replace('/', '-').replace(':', ' -').replace('?', '').replace('"', '')
 
 
 def load_registry():
@@ -217,7 +176,6 @@ def find_modified_files(since_dt, specific_file=None):
     """Find .md files modified since the given datetime."""
     if specific_file:
         fp = os.path.join(VAULT, specific_file) if not os.path.isabs(specific_file) else specific_file
-        assert_inside_vault(fp)
         if os.path.exists(fp):
             return [fp]
         return []
@@ -320,7 +278,6 @@ def update_connection_page(entity_type, canonical, note_name, year, dry_run=Fals
         return False
 
     filepath = os.path.join(CONNECTIONS, dir_name, safe_connection_filename(canonical) + '.md')
-    assert_inside_vault(filepath)
 
     if not os.path.exists(filepath):
         return False
@@ -377,7 +334,6 @@ def inject_backlinks(filepath, hits, dry_run=False):
     Returns True if the file was changed."""
     if not hits:
         return False
-    assert_inside_vault(filepath)
 
     # Build the connections section
     section_lines = ['\n## Connections', BACKLINK_MARKER]
@@ -731,7 +687,6 @@ def rebuild_index(registry=None):
         lines.append('')
 
     index_path = os.path.join(CONNECTIONS, '_index.md')
-    assert_inside_vault(index_path)
     atomic_write(index_path, '\n'.join(lines))
 
 
