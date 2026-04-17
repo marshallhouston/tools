@@ -7,7 +7,9 @@ and decisions, then updates the corresponding _connections/ pages with
 new source note links.
 
 Configuration:
-    OBSIDIAN_VAULT       — absolute path to your vault (required; defaults to ~/Documents/vault)
+    OBSIDIAN_VAULT       — absolute path to your vault. Set via env var or
+                           ~/.obsidian-weaver/config (written by /obsidian-setup).
+                           Script exits with a structured error if neither is present.
     OBSIDIAN_CONNECTIONS — absolute path to the connections folder (optional;
                            defaults to $OBSIDIAN_VAULT/_connections). Only set this if
                            you moved _connections/ elsewhere in your vault.
@@ -32,8 +34,39 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 from pathlib import Path
 
-# Vault location — override with OBSIDIAN_VAULT env var, or edit this path directly.
-VAULT = os.environ.get("OBSIDIAN_VAULT", os.path.expanduser("~/Documents/vault"))
+# Vault location — set via OBSIDIAN_VAULT env var or ~/.obsidian-weaver/config.
+CONFIG_FILE = os.path.expanduser("~/.obsidian-weaver/config")
+
+
+def _resolve_vault():
+    """Resolve the vault path. Emits structured error and exits 1 if missing or invalid."""
+    path = os.environ.get("OBSIDIAN_VAULT", "").strip()
+    if not path and os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE) as f:
+                path = f.read().strip()
+        except OSError:
+            path = ""
+    if not path:
+        print(json.dumps({
+            'status': 'error',
+            'reason': 'OBSIDIAN_VAULT not set',
+            'hint': 'run /obsidian-setup',
+        }))
+        sys.exit(1)
+    path = os.path.expanduser(path)
+    if not os.path.isdir(path):
+        print(json.dumps({
+            'status': 'error',
+            'reason': 'vault not found',
+            'path': path,
+            'hint': 'run /obsidian-setup or fix OBSIDIAN_VAULT',
+        }))
+        sys.exit(1)
+    return path
+
+
+VAULT = _resolve_vault()
 # Connections folder — defaults to <vault>/_connections. Override with OBSIDIAN_CONNECTIONS
 # if you've moved it (must match the `connections` row in your vault's CLAUDE.md Paths table).
 CONNECTIONS = os.environ.get("OBSIDIAN_CONNECTIONS", os.path.join(VAULT, "_connections"))

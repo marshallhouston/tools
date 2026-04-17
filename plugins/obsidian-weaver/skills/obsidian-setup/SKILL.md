@@ -15,23 +15,32 @@ Walks the user through wiring their vault up to the `today`, `capture`, and `con
 4. Checks for the optional `obsidian` CLI.
 5. Prints next steps.
 
-## Step 1: Check / set `OBSIDIAN_VAULT`
+## Step 1: Persist the vault path
+
+The plugin resolves `OBSIDIAN_VAULT` in this order: env var first, then `~/.obsidian-weaver/config` (a one-line file containing the absolute vault path). Writing the config file is what keeps things working across separate Bash tool calls within a Claude Code session — each call is a fresh shell, so an `export` in one call does not reach the next.
 
 Run:
 
 ```bash
 echo "${OBSIDIAN_VAULT:-UNSET}"
+test -f ~/.obsidian-weaver/config && cat ~/.obsidian-weaver/config || echo "(no config file)"
 ```
 
-**If `UNSET` or empty:**
+**If both are unset:**
 
 Ask the user for their vault's absolute path (e.g. `~/notes`, `~/Documents/MyVault`). Then:
 
-- Offer to add `export OBSIDIAN_VAULT="<path>"` to their shell rc file (`~/.zshrc` for zsh, `~/.bashrc` for bash). Detect the shell via `echo $SHELL`. Only append if the line isn't already there — use `grep -q "OBSIDIAN_VAULT" ~/.zshrc || echo 'export OBSIDIAN_VAULT=...' >> ~/.zshrc`.
-- For the current session, also run `export OBSIDIAN_VAULT="<path>"` so subsequent steps work without restarting the shell.
-- Remind the user to `source ~/.zshrc` (or open a new terminal) before running `/today`, `/capture`, or `/connect-sync` in future sessions.
+- Write it to `~/.obsidian-weaver/config` so it persists across shell invocations:
 
-**If the path doesn't exist:** Ask whether to `mkdir -p` it (new vault) or correct the path (typo).
+  ```bash
+  mkdir -p ~/.obsidian-weaver
+  printf '%s\n' "<absolute path>" > ~/.obsidian-weaver/config
+  ```
+
+- For the current shell session also `export OBSIDIAN_VAULT="<path>"`.
+- Tell the user that for CLI use outside Claude Code, they should add `export OBSIDIAN_VAULT="<path>"` to their shell rc (`~/.zshrc` for zsh, `~/.bashrc` for bash). Offer to append it, gated on `grep -q "OBSIDIAN_VAULT" ~/.zshrc || ...` so re-runs don't duplicate.
+
+**If the path doesn't exist on disk:** Ask whether to `mkdir -p` it (new vault) or correct the path (typo).
 
 **If set and valid:** Continue.
 
