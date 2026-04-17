@@ -27,7 +27,6 @@ import json
 import os
 import re
 import sys
-import tempfile
 import time
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -86,22 +85,6 @@ SKIP_DIRS = {
 SKIP_BACKLINK_FILES = {'CLAUDE.md', 'README.md', '.pr-description.md'}
 
 
-def atomic_write(path, data):
-    """Write `data` to `path` atomically via a same-dir tempfile + os.replace."""
-    dir_ = os.path.dirname(path) or "."
-    fd, tmp = tempfile.mkstemp(prefix=".tmp-", dir=dir_)
-    try:
-        with os.fdopen(fd, "w") as f:
-            f.write(data)
-        os.replace(tmp, path)
-    except BaseException:
-        try:
-            os.unlink(tmp)
-        except FileNotFoundError:
-            pass
-        raise
-
-
 def acquire_lock():
     """Try to acquire the sync lock. Returns True if acquired, False if another sync is running."""
     if os.path.exists(LOCKFILE):
@@ -140,36 +123,20 @@ def load_registry():
                     'or set OBSIDIAN_CONNECTIONS if your connections folder is elsewhere.',
         }, indent=2))
         sys.exit(1)
-    try:
-        with open(REGISTRY) as f:
-            return json.load(f)
-    except json.JSONDecodeError as e:
-        print(json.dumps({
-            'status': 'error',
-            'reason': 'registry unreadable',
-            'expected_at': REGISTRY,
-            'parse_error': f'{e.msg} at line {e.lineno} column {e.colno}',
-            'hint': 'Fix or regenerate .registry.json — see _connections-seed/README.md for the expected shape.',
-        }, indent=2))
-        sys.exit(1)
+    with open(REGISTRY) as f:
+        return json.load(f)
 
 
 def load_state():
-    if not os.path.exists(STATE):
-        return {'last_sync': '2020-01-01T00:00:00', 'synced_files': [], 'sync_count': 0}
-    try:
+    if os.path.exists(STATE):
         with open(STATE) as f:
             return json.load(f)
-    except json.JSONDecodeError as e:
-        sys.stderr.write(
-            f'warning: {STATE} is unreadable ({e.msg} at line {e.lineno}); '
-            'resetting state and rescanning from scratch\n'
-        )
-        return {'last_sync': '2020-01-01T00:00:00', 'synced_files': [], 'sync_count': 0}
+    return {'last_sync': '2020-01-01T00:00:00', 'synced_files': [], 'sync_count': 0}
 
 
 def save_state(state):
-    atomic_write(STATE, json.dumps(state, indent=2))
+    with open(STATE, 'w') as f:
+        json.dump(state, f, indent=2)
 
 
 def find_modified_files(since_dt, specific_file=None):
@@ -219,21 +186,12 @@ def build_matchers(registry):
 
 
 def scan_file(filepath, matchers):
-    """Scan a file for entity mentions.
-    Returns (hits_dict, skip_reason_or_None). hits_dict is {type: {canonical_name}}.
-    When skip_reason is not None the file was unreadable and hits is empty."""
+    """Scan a file for entity mentions. Returns dict of {type: {canonical_name}}."""
     try:
         with open(filepath) as f:
             content = f.read()
-    except UnicodeDecodeError as e:
-        # User's file encoding issue — retry on next run won't help. Surface as skipped.
-        return {}, f'UnicodeDecodeError: {e.reason}'
-    except FileNotFoundError:
-        # Race: file deleted between enumeration and read. Safe to silently skip.
-        return {}, 'FileNotFoundError'
-    # PermissionError and other OSError propagate to the caller so the per-file
-    # try/except in the main loop records them as failures and caps last_sync
-    # so they're retried on the next run.
+    except (UnicodeDecodeError, PermissionError, FileNotFoundError):
+        return {}
 
     # Strip auto-generated Connections section so we only match the note's real content
     marker_idx = content.find(BACKLINK_MARKER)
@@ -255,7 +213,7 @@ def scan_file(filepath, matchers):
         if pattern.search(content):
             hits[entity_type].add(canonical)
 
-    return dict(hits), None
+    return dict(hits)
 
 
 def note_name_from_path(filepath):
@@ -314,7 +272,8 @@ def update_connection_page(entity_type, canonical, note_name, year, dry_run=Fals
         content = content.rstrip() + f'\n\n{year_header}\n- [[{note_name}]]\n'
 
     if not dry_run:
-        atomic_write(filepath, content)
+        with open(filepath, 'w') as f:
+            f.write(content)
 
     return True
 
@@ -351,45 +310,28 @@ def inject_backlinks(filepath, hits, dry_run=False):
         content = f.read()
 
     if BACKLINK_MARKER in content:
-        # Anchor only on the marker. The auto-block starts at the `## Connections`
-        # header we wrote immediately above the marker; if that header is missing
-        # (user hand-edited), start at the marker line itself and leave anything
-        # above untouched — never hunt for a `## Connections` heading by text,
-        # since the user may have authored their own elsewhere.
+        # Replace existing section: everything from ## Connections to end (or next ##)
         marker_idx = content.index(BACKLINK_MARKER)
-        line_start = content.rfind('\n', 0, marker_idx)
-        line_start = 0 if line_start == -1 else line_start + 1
-        auto_header = '## Connections\n'
-        prev_line_start = content.rfind('\n', 0, max(line_start - 1, 0))
-        prev_line_start = 0 if prev_line_start == -1 else prev_line_start + 1
-        prev_line = content[prev_line_start:line_start]
-        if prev_line == auto_header:
-            section_start = prev_line_start
+        section_start = content.rfind('\n## Connections', 0, marker_idx)
+        if section_start == -1:
+            section_start = content.rfind('## Connections', 0, marker_idx)
         else:
-            section_start = line_start
+            section_start += 1  # skip the leading newline
 
-        # End of auto-block: next `## ` header (or EOF).
         after_marker = marker_idx + len(BACKLINK_MARKER)
         next_header = content.find('\n## ', after_marker)
-        section_end = len(content) if next_header == -1 else next_header + 1
+        section_end = len(content) if next_header == -1 else next_header
 
-        # Preserve a single newline separator before our block if we're splicing
-        # mid-document so we don't collapse into the preceding paragraph.
-        prefix = content[:section_start]
-        suffix = content[section_end:]
-        replacement = new_section.lstrip('\n')
-        if prefix and not prefix.endswith('\n'):
-            prefix += '\n'
-        updated = prefix + replacement + suffix
+        updated = content[:section_start] + new_section.lstrip('\n') + content[section_end:]
     else:
-        # Append new section at end
         updated = content.rstrip() + '\n' + new_section
 
     if updated == content:
         return False
 
     if not dry_run:
-        atomic_write(filepath, updated)
+        with open(filepath, 'w') as f:
+            f.write(updated)
 
     return True
 
@@ -402,21 +344,11 @@ def main():
 
     # Lock: prevent concurrent runs from multiple sessions
     if not acquire_lock():
-        print(json.dumps({'status': 'error', 'reason': 'sync in progress'}))
-        sys.exit(1)
+        print(json.dumps({'status': 'skipped', 'reason': 'another sync is running'}))
+        return
 
     try:
-        try:
-            _run_sync(args, dry_run)
-        except SystemExit:
-            raise
-        except BaseException as e:
-            print(json.dumps({
-                'status': 'error',
-                'reason': type(e).__name__,
-                'message': str(e),
-            }))
-            sys.exit(1)
+        _run_sync(args, dry_run)
     finally:
         release_lock()
 
@@ -450,64 +382,45 @@ def _run_sync(args, dry_run):
     # Scan and update
     updates = []
     total_links_added = 0
-    failures = []
-    skipped = []
-    failed_mtimes = []
 
     for filepath in modified:
-        try:
-            note_name = note_name_from_path(filepath)
-            basename = os.path.basename(filepath)
+        note_name = note_name_from_path(filepath)
+        basename = os.path.basename(filepath)
 
-            # Skip if file was deleted between find and process (concurrent sessions)
-            if not os.path.exists(filepath):
-                continue
+        # Skip if file was deleted between find and process (concurrent sessions)
+        if not os.path.exists(filepath):
+            continue
 
-            # Determine year from filename or modification time
-            year_match = re.match(r'(\d{4})-', basename)
-            if year_match:
-                year = int(year_match.group(1))
-            else:
-                year = datetime.fromtimestamp(os.path.getmtime(filepath)).year
+        # Determine year from filename or modification time
+        year_match = re.match(r'(\d{4})-', basename)
+        if year_match:
+            year = int(year_match.group(1))
+        else:
+            year = datetime.fromtimestamp(os.path.getmtime(filepath)).year
 
-            # Scan for entity mentions
-            hits, skip_reason = scan_file(filepath, matchers)
-            if skip_reason is not None:
-                skipped.append({
-                    'path': os.path.relpath(filepath, VAULT),
-                    'reason': skip_reason,
-                })
-                continue
+        # Scan for entity mentions
+        hits = scan_file(filepath, matchers)
 
-            if not hits:
-                continue
+        if not hits:
+            continue
 
-            file_updates = []
-            for entity_type, names in hits.items():
-                for canonical in names:
-                    if update_connection_page(entity_type, canonical, note_name, year, dry_run):
-                        file_updates.append({'type': entity_type, 'name': canonical})
-                        total_links_added += 1
+        file_updates = []
+        for entity_type, names in hits.items():
+            for canonical in names:
+                if update_connection_page(entity_type, canonical, note_name, year, dry_run):
+                    file_updates.append({'type': entity_type, 'name': canonical})
+                    total_links_added += 1
 
-            # Inject backlinks into the source note (skip config files)
-            if basename not in SKIP_BACKLINK_FILES:
-                inject_backlinks(filepath, hits, dry_run)
+        # Inject backlinks into the source note (skip config files)
+        if basename not in SKIP_BACKLINK_FILES:
+            inject_backlinks(filepath, hits, dry_run)
 
-            if file_updates:
-                updates.append({
-                    'file': basename,
-                    'note': note_name,
-                    'connections': file_updates,
-                })
-        except Exception as e:
-            failures.append({
-                'path': os.path.relpath(filepath, VAULT),
-                'error': f'{type(e).__name__}: {e}',
+        if file_updates:
+            updates.append({
+                'file': basename,
+                'note': note_name,
+                'connections': file_updates,
             })
-            try:
-                failed_mtimes.append(os.path.getmtime(filepath))
-            except OSError:
-                pass
 
     # Identify files with zero or very few hits — candidates for LLM review
     # These are files the pattern matcher couldn't classify, suggesting they may
@@ -522,11 +435,7 @@ def _run_sync(args, dry_run):
         # Skip templates, standups dir listing, etc.
         if '/_templates/' in filepath or basename.startswith('.'):
             continue
-        try:
-            hits, _skip = scan_file(filepath, matchers)
-        except Exception:
-            # Already recorded in `failures` above; don't double-count.
-            continue
+        hits = scan_file(filepath, matchers)
         hit_count = sum(len(v) for v in hits.values())
         if hit_count <= 1:
             # Read first 200 chars to give the LLM context on what's in the file
@@ -542,14 +451,9 @@ def _run_sync(args, dry_run):
                 'preview': preview[:150],
             })
 
-    # Update state. If any file failed, cap last_sync at the oldest failed mtime
-    # so the next run re-picks up the failed files (ensures retry semantics).
+    # Update state
     if not dry_run:
-        if failed_mtimes:
-            cap = min(failed_mtimes) - 1
-            state['last_sync'] = datetime.fromtimestamp(cap).isoformat()
-        else:
-            state['last_sync'] = datetime.now().isoformat()
+        state['last_sync'] = datetime.now().isoformat()
         state['sync_count'] = state.get('sync_count', 0) + 1
         state['synced_files'] = [os.path.basename(f) for f in modified[:50]]
         save_state(state)
@@ -566,8 +470,6 @@ def _run_sync(args, dry_run):
         'files_with_updates': len(updates),
         'total_links_added': total_links_added,
         'updates': updates,
-        'failures': failures,
-        'skipped': skipped,
         'since': since_dt.isoformat(),
     }
 
@@ -687,7 +589,8 @@ def rebuild_index(registry=None):
         lines.append('')
 
     index_path = os.path.join(CONNECTIONS, '_index.md')
-    atomic_write(index_path, '\n'.join(lines))
+    with open(index_path, 'w') as f:
+        f.write('\n'.join(lines))
 
 
 if __name__ == '__main__':
