@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "cosmic-farmland",
-      "description": "Marshall's cross-project skills, commands, and hooks",
+      "description": "cosmic farmland's collection of skills, commands, hooks, and other randomness",
       "source": "./plugins/cosmic-farmland",
       "category": "productivity"
     },
