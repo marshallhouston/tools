@@ -44,22 +44,37 @@ Where things stand right now:
 ### 5. Next step (imperative)
 A clear, single instruction for what the fresh session should do first. Not a menu of options -- one concrete action.
 
-**Worktree guidance:** If the next step involves multi-task feature implementation (3+ tasks, new files, schema changes), the prompt must instruct the fresh session to create a git worktree first. Feature work happens on branches, not main. Include the branch name in the prompt (e.g. "feat/invites").
+**Anchor to a specific skill invocation.** Name the skill the fresh session should use, so auto-triggered skills (e.g. `brainstorming`) don't hijack the intended next step. Examples below show this explicitly.
+
+**Worktree guidance:** If the next step involves multi-task feature implementation (3+ tasks, new files, schema changes), the *sender* creates the git worktree before writing the handoff. Bake the absolute worktree path and branch name into the prompt so the fresh session starts inside it. Feature work happens on branches, not main.
 
 Examples:
-- "Create a git worktree for this feature (branch: feat/invites), then read the plan at `docs/superpowers/plans/...` and execute it using subagent-driven-development."
-- "Run the test suite and fix any failures from the last session's changes."
-- "Read the plan at `docs/superpowers/plans/...` and execute the remaining tasks (3-6) using subagent-driven-development." (worktree already exists)
+- "cd into `/Users/marshallhouston/code/preach-hub-feat-invites` (branch: `feat/invites`), then invoke `superpowers:executing-plans` on `docs/superpowers/plans/invites.md` starting at Task 1."
+- "Run the test suite and fix any failures from the last session's changes. Do not invoke brainstorming or planning skills."
+- "Invoke `superpowers:executing-plans` on `docs/superpowers/plans/...` starting at Task 4. Worktree already exists at cwd."
+
+### 6. Receiver self-check (append verbatim)
+Append this block to every handoff prompt so the fresh session verifies state before acting:
+
+```
+Before first action, verify:
+- Referenced files exist at the committed SHA named above.
+- cwd matches the worktree path stated above.
+- Current branch matches.
+If any check fails, stop and report -- do not guess or re-discover.
+```
 
 ## How to generate the prompt
 
-1. **Scan the conversation** for specs, plans, decisions, and current state. Identify what has been committed vs. what is still in-flight.
-2. **Read referenced files** to verify they exist and are current. Do not reference files that haven't been committed.
-3. **Draft the prompt** following the five-part structure above.
-4. **Keep it concise.** Target 150-300 words. The prompt is a launch pad, not a novel. The fresh session will read the referenced files for detail.
-5. **Copy to clipboard automatically** using `pbcopy` (macOS). Pipe the raw prompt text (no markdown fences) to `pbcopy` via Bash so the user can paste immediately after `/clear`.
-6. **Display the prompt** in a fenced code block so the user can review what was copied.
-7. **Tell the user:** "Copied to clipboard. Run `/clear`, then paste."
+1. **Pre-flight git check.** Run `git status --short` and `git rev-parse HEAD`. If working tree is dirty and the handoff would reference uncommitted files, stop and ask the user: "Commit first, or explicitly flag these files as uncommitted in the prompt?" Never silently reference phantom files.
+2. **Create worktree if needed.** If next step = multi-task feature work and current cwd is main checkout, create the worktree now (`git worktree add ../<repo>-<branch> -b <branch>`) before drafting. Capture the absolute path for the prompt.
+3. **Scan the conversation** for specs, plans, decisions, and current state. Identify what has been committed vs. what is still in-flight.
+4. **Read referenced files** to verify they exist and are current. Do not reference files that haven't been committed.
+5. **Draft the prompt** following the six-part structure above.
+6. **Hard cap: 250 words.** The prompt is a launch pad, not a novel. If "Key constraints" exceeds 3 bullets, move the rest into the spec file. Fresh session reads referenced files for detail.
+7. **Copy to clipboard automatically** using `pbcopy` (macOS). Pipe raw prompt text (no markdown fences) to `pbcopy` via Bash so the user can paste immediately after `/clear`.
+8. **Display the prompt** in a fenced code block so the user can review what was copied.
+9. **Tell the user:** "Copied to clipboard. Run `/clear`, then paste."
 
 ## Format
 
@@ -77,5 +92,7 @@ echo '<the resumption prompt>' | pbcopy
 - **Don't summarize the entire conversation.** The prompt points at committed artifacts, it doesn't reproduce them.
 - **Don't leave options open.** "You could do A or B" defeats the purpose. Pick the one that was decided.
 - **Don't include context the files already contain.** If the spec explains the data model, don't repeat it in the prompt. Just point at the spec.
-- **Don't use vague next steps.** "Continue the work" is useless. "Execute the plan at `path` starting from Task 1 using subagent-driven-development" is actionable.
+- **Don't use vague next steps.** "Continue the work" is useless. Name the skill and the entry point.
 - **Don't forget to verify files exist.** A prompt that references a file that was never committed is worse than no prompt at all.
+- **Don't skip the pre-flight git check.** Dirty working tree = uncommitted files = broken handoff. Commit first or flag explicitly.
+- **Don't defer worktree creation to the fresh session.** If feature work, create it now and bake the path in.
