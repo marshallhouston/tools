@@ -1,9 +1,9 @@
 ---
-description: PTV (Prove The Value) audit. Alias for /fart-smell-detection. Levels whiff|sniff|huff|dutch-oven-yourselff.
+description: PTV (Prove The Value) audit. Alias for /fart-sniffing-detection. Levels whiff|sniff|huff|dutch-oven-yourselff.
 argument-hint: "[whiff|sniff|huff|dutch-oven-yourselff] [PR #N | git-range | --staged]"
 ---
 
-Invoke the `fart-smell-detection` skill.
+Invoke the `fart-sniffing-detection` skill.
 
 Args: `$ARGUMENTS`
 

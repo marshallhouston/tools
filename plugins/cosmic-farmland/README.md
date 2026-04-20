@@ -17,7 +17,7 @@ In Claude Code:
 **Skills**
 
 - `disk-memory-cleanup` — free disk space (Xcode caches, node_modules, etc.)
-- `fart-smell-detection` — PTVM ("Prove The Value Motherfucker") audit of recent commits or a PR. Flags cologne-sniffing changes, ranks kill candidates. Four skepticism levels: `whiff` → `sniff` → `huff` → `dutch-oven-yourselff`.
+- `fart-sniffing-detection` — PTVM ("Prove The Value Motherfucker") audit of recent commits or a PR. Flags cologne-sniffing changes, ranks kill candidates. Four skepticism levels: `whiff` → `sniff` → `huff` → `dutch-oven-yourselff`.
 - `feedback` — section-by-section review loop
 - `golf-tee-times` — check tee time availability
 - `handoff` — generate self-contained session handoff
@@ -26,5 +26,5 @@ In Claude Code:
 **Commands**
 
 - `/execute-plan` — execute a written plan
-- `/fart-smell-detection [level] [target]` — run the skill above. Target = PR number, git range, `--staged`, or auto-detect current branch's open PR. Aliases: `/ptvm`, `/prove-the-value-motherfucker`.
+- `/fart-sniffing-detection [level] [target]` — run the skill above. Target = PR number, git range, `--staged`, or auto-detect current branch's open PR. Aliases: `/ptvm`, `/prove-the-value-motherfucker`.
 - `/granola-sync` — sync recent Granola meetings

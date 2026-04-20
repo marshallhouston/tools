@@ -1,16 +1,16 @@
 ---
-name: fart-smell-detection
-description: "Audit recent commits/PRs for bloat vs real value using PTVM (Prove The Value Motherfucker). Flags cologne-sniffing changes, ranks kill candidates. Use when the user says /fart-smell-detection, /ptv, /ptvm, /prove-the-value-motherfucker, asks 'is this bloat?', 'prove the value', 'PTV this', 'PTVM this', 'which of these commits are worth keeping', or wants a skeptical review of a batch of changes before merge."
+name: fart-sniffing-detection
+description: "Audit recent commits/PRs for bloat vs real value using PTVM (Prove The Value Motherfucker). Flags cologne-sniffing changes, ranks kill candidates. Use when the user says /fart-sniffing-detection, /ptv, /ptvm, /prove-the-value-motherfucker, asks 'is this bloat?', 'prove the value', 'PTV this', 'PTVM this', 'which of these commits are worth keeping', or wants a skeptical review of a batch of changes before merge."
 argument-hint: "[level] [target]  e.g. 'huff PR #42', 'sniff main..HEAD', 'dutch-oven-yourselff' (staged)"
 ---
 
-# Fart-Smell Detection -- PTVM Audit
+# Fart-Sniffing Detection -- PTVM Audit
 
 Skeptically review a batch of changes to snuff out the fluff. Prove every commit earns its keep and has value. Kill the ones that are farts masquerading as cologne. YAGNI
 
 ## When to use
 
-- `/fart-smell-detection [level] [target]`
+- `/fart-sniffing-detection [level] [target]`
 - `/ptv [level] [target]` — alias
 - `/ptvm [level] [target]` — alias
 - `/prove-the-value-motherfucker [level] [target]` — alias
@@ -96,7 +96,7 @@ For each commit (or logical chunk):
 Match this shape (mirrors the example the user referenced):
 
 ```
-# Fart-Smell Audit — [level] — [target]
+# Fart-Sniffing Audit — [level] — [target]
 
 Lens: [lens(es)] — [one-line reason for inference]
 

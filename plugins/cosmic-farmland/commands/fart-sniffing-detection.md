@@ -3,7 +3,7 @@ description: PTVM audit of recent commits/PR. Flags bloat, ranks kill candidates
 argument-hint: "[whiff|sniff|huff|dutch-oven-yourselff] [PR #N | git-range | --staged]"
 ---
 
-Invoke the `fart-smell-detection` skill.
+Invoke the `fart-sniffing-detection` skill.
 
 Args: `$ARGUMENTS`
 
