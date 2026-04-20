@@ -6,6 +6,8 @@ Marshall's cross-project skills, commands, and hooks.
 
 **1.0.0** — `fart-smell-detection` skill/command renamed to `fart-sniffing-detection`. Pin to `0.5.1` if you relied on the old name.
 
+Transition: `/fart-smell-detection` still works as a deprecated shim that forwards to the new skill and prints a rename notice. Shim will be removed in `2.0.0` — update scripts/muscle memory before then. Aliases `/ptv`, `/ptvm`, `/prove-the-value-motherfucker` unchanged.
+
 ## Install
 
 In Claude Code:

@@ -1,6 +1,6 @@
 ---
 name: fart-sniffing-detection
-description: "Audit recent commits/PRs for bloat vs real value using PTVM (Prove The Value Motherfucker). Flags cologne-sniffing changes, ranks kill candidates. Use when the user says /fart-sniffing-detection, /ptv, /ptvm, /prove-the-value-motherfucker, asks 'is this bloat?', 'prove the value', 'PTV this', 'PTVM this', 'which of these commits are worth keeping', or wants a skeptical review of a batch of changes before merge."
+description: "Audit recent commits/PRs for bloat vs real value using PTVM (Prove The Value Motherfucker). Flags cologne-sniffing changes, ranks kill candidates. Use when the user says /fart-sniffing-detection, /fart-smell-detection (deprecated alias), /ptv, /ptvm, /prove-the-value-motherfucker, asks 'is this bloat?', 'prove the value', 'PTV this', 'PTVM this', 'which of these commits are worth keeping', or wants a skeptical review of a batch of changes before merge."
 argument-hint: "[level] [target]  e.g. 'huff PR #42', 'sniff main..HEAD', 'dutch-oven-yourselff' (staged)"
 ---
 
