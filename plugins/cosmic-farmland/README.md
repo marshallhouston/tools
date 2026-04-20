@@ -2,6 +2,10 @@
 
 Marshall's cross-project skills, commands, and hooks.
 
+## Breaking changes
+
+**1.0.0** — `fart-smell-detection` skill/command renamed to `fart-sniffing-detection`. Pin to `0.5.1` if you relied on the old name.
+
 ## Install
 
 In Claude Code:
