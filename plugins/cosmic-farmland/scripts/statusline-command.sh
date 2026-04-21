@@ -90,7 +90,18 @@ bar=""
 
 if [ "$pct" -ge 90 ]; then bar_color="\033[0;31m"
 elif [ "$pct" -ge 70 ]; then bar_color="\033[0;33m"
+elif [ "$pct" -ge 60 ]; then bar_color="\033[0;33m"
 else bar_color="\033[0;32m"; fi
+
+# Handoff nag at 60%+ (before 80% autocompact)
+handoff_nag=""
+if [ "$pct" -ge 60 ]; then
+  if [ "$pct" -ge 75 ]; then
+    handoff_nag=" \033[1;31m<< RUN /cosmic-farmland:handoff NOW >>\033[0m"
+  else
+    handoff_nag=" \033[1;33m<< handoff soon: /cosmic-farmland:handoff >>\033[0m"
+  fi
+fi
 
 # Format cost
 cost_fmt=$(printf '$%.2f' "$cost")
@@ -128,4 +139,4 @@ fi
 printf "%b%s\033[0m %s%% \033[0;37m| %s | %s in / %s out\033[0m" \
   "$bar_color" "$bar" "$pct" "$cost_fmt" "$in_fmt" "$out_fmt"
 [ -n "$rate_part" ] && printf " \033[0;37m|\033[0m %b" "$rate_part"
-printf " \033[0;37m| %s\033[0m %b" "$model" "$api_dot"
+printf " \033[0;37m| %s\033[0m %b%b" "$model" "$api_dot" "$handoff_nag"
