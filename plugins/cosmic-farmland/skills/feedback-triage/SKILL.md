@@ -1,20 +1,23 @@
 ---
 name: feedback-triage
-description: Intake raw feedback from a person, categorize and triage each item into structured actionable units, then auto-spawn worktrees for accepted items. Use when the user says "triage this feedback", "categorize feedback from X", "/feedback-triage", pastes a block of feedback from a named source (co-founder, user, tester), or wants to turn a feedback dump into per-item decisions + worktrees. Not for single-bug reports or code review comments -- those have their own flows.
+description: Intake raw feedback from a person, categorize and triage each item into structured actionable units, then optionally spawn worktrees for accepted items. Use when the user says "triage this feedback", "categorize feedback from X", "rip on this", "/feedback-triage", or pastes a block of feedback from a named source (co-founder, user, tester) and wants per-item decisions. Not for single-bug reports, PR review comments, or section-by-section file review (use `/feedback` for that last one).
 ---
 
 # Feedback Triage
 
-Turn a raw feedback blob into a structured triage doc, then auto-spawn worktrees for accepted items. Reusable across projects via per-project config.
+Turn a raw feedback blob into a structured triage doc, then optionally spawn worktrees for accepted items.
 
 ## When to use
 
 Trigger when:
 - User pastes feedback from a named source (person, channel, meeting notes) and wants to process it
-- User says: "triage", "categorize", "what do we do with this feedback", "rip on this"
+- User says: "triage", "categorize", "rip on this", "what do we do with this feedback"
 - User invokes `/feedback-triage`
 
-Not for: single-bug reports, code review comments on a PR, one-off asks that map to one task. Those skip the triage doc.
+Not for:
+- Single-bug reports (one task, no triage needed)
+- PR review comments (use the PR review flow)
+- Section-by-section review of an existing file (use `/feedback`)
 
 ## Inputs required
 
@@ -27,47 +30,41 @@ Before triaging, confirm:
 
 ### Step 1 — Load project config
 
-Read `.feedback-triage.json` at repo root. If absent, use defaults below and note it.
+Read `.feedback-triage.json` at repo root. If absent, use defaults below.
 
-Config schema:
+Config schema (all optional):
 ```json
 {
   "docs_dir": "docs/feedback",
-  "index_file": "docs/feedback/INDEX.md",
-  "categories": ["IA", "feature", "content", "bug", "polish", "vision"],
-  "tiers": ["v1", "v2", "v3", "vX"],
-  "sizes": ["S", "M", "L"],
-  "decisions": ["accept", "defer", "reject", "needs-discussion"],
-  "worktree_prefix": "feedback",
-  "tracker_file": "docs/V1_PLUS.md",
-  "tracker_append_on_accept": false,
-  "auto_spawn_worktrees": true
+  "index_file": "docs/feedback/INDEX.md"
 }
 ```
 
-Unknown categories/tiers in user confirmation: ask, then offer to extend config.
+Categories, tiers, sizes, and decisions are fixed in this skill (see Step 3). Extract them into config only when a second project genuinely needs different values.
 
 ### Step 2 — Parse feedback into items
 
-Break blob into atomic items. One "ask" = one item. Merges ("combine X and Y into Z") = one item. Multi-part suggestions ("do A with subcats B, C, D") = one item if they stand or fall together, else split.
+Break blob into atomic items. One "ask" = one item. Merges ("combine X and Y into Z") = one item. Multi-part suggestions split only if they stand or fall independently.
 
 ### Step 3 — Triage each item
 
 For each item, fill:
 - **Raw quote** — verbatim from source
-- **Category** — from config
-- **Tier** — from config
-- **Size** — S/M/L (no time estimates)
-- **Decision** — from config
+- **Category** — one of: `IA`, `feature`, `content`, `bug`, `polish`, `vision`
+- **Tier** — one of: `v1`, `v2`, `v3`, `vX`
+- **Size** — `S` / `M` / `L` (no time estimates)
+- **Decision** — one of: `accept`, `defer`, `reject`, `needs-discussion`
 - **Rationale** — one sentence. Why this tier, why this decision.
 - **Next action** — if `accept`: worktree branch name (slugified). Else: what unblocks it.
 - **Dependencies** — other items, missing primitives, external blockers
 
-Propose the full triage to the user in a compact table before writing. Let them override any field.
+Propose the full triage in a compact table before writing. Let the user override any field.
 
 ### Step 4 — Write the doc
 
 Path: `{docs_dir}/YYYY-MM-DD-{source-slug}.md`
+
+Slugify source the same way as branches (Step 6): lowercase, hyphens only, strip punctuation, max ~40 chars.
 
 Template:
 ```markdown
@@ -95,10 +92,10 @@ Template:
 
 ### 2. ...
 
-## Worktrees to spawn
+## Worktrees proposed
 
-- `{prefix}/{branch-1}` — {one-line scope}
-- `{prefix}/{branch-2}` — {one-line scope}
+- `feedback/{branch-1}` — {one-line scope}
+- `feedback/{branch-2}` — {one-line scope}
 
 ## Deferred / rejected / discussion
 
@@ -112,28 +109,27 @@ Append to `{index_file}` (create if missing):
 - YYYY-MM-DD — {source} — {N items, M accepted} — [link](./YYYY-MM-DD-source.md)
 ```
 
-### Step 6 — Auto-spawn worktrees (if config enables)
+### Step 6 — Propose worktrees (require explicit y/n)
 
 For each `accept` item with a branch name:
-1. Create worktree via `git worktree add ../{repo}-{branch-slug} -b {prefix}/{branch-slug}`
-2. Use the repo's existing worktree convention (check sibling worktrees first — match naming)
-3. Copy the triage doc path into the worktree's first commit message as a reference? No — leave that to the per-worktree work
+1. Print the full list of proposed worktree commands, one per line:
+   ```
+   git worktree add ../{repo}-{branch-slug} -b feedback/{branch-slug}
+   ```
+2. Before running any of them, ask the user: *"Spawn these N worktrees now? (y/n)"*
+3. Only on explicit `y` do you run the commands. On `n` or ambiguous, stop and leave the proposed list in the doc for manual spawn later.
+4. Before each `git worktree add`, verify the target directory does not exist and the branch name does not collide with an existing branch. If either collides, skip that one and report it to the user.
 
 Report list of spawned worktree paths back to user.
 
-If `auto_spawn_worktrees: false`: list candidates, stop. User spawns manually.
-
-### Step 7 — Project-specific tracker integration (optional)
-
-If `tracker_append_on_accept: true`: append accepted items to `{tracker_file}` using that project's conventions. Read the tracker first to match format. Ask user if conventions are unclear — do not guess.
+Branch slug rules: lowercase, hyphens only, no punctuation, max ~40 chars.
 
 ## Guardrails
 
 - **Don't re-triage items already in the index** — check for prior triage of the same source+date before writing. If exists, offer merge or overwrite.
-- **Don't spawn worktrees silently** — always list them before creating.
+- **Never spawn worktrees silently** — always list them and require explicit y/n (Step 6).
 - **Preserve the raw quote** — never paraphrase into the `Quote` field. Future re-reads need source fidelity.
-- **No time estimates** — use Size (S/M/L) and complexity notes only.
-- **Slugify branch names** — lowercase, hyphens, no punctuation. Max ~40 chars.
+- **No time estimates** — use Size (S/M/L) only.
 
 ## Red flags — stop and ask
 

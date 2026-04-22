@@ -25,6 +25,7 @@ In Claude Code:
 - `disk-memory-cleanup` — free disk space (Xcode caches, node_modules, etc.)
 - `fart-sniffing-detection` — PTVM ("Prove The Value Motherfucker") audit of recent commits or a PR. Flags cologne-sniffing changes, ranks kill candidates. Four skepticism levels: `whiff` → `sniff` → `huff` → `dutch-oven-yourselff`.
 - `feedback` — section-by-section review loop
+- `feedback-triage` — intake a raw feedback blob from a named source, triage each item (category/tier/size/decision), write a dated doc, propose worktrees for accepted items
 - `golf-tee-times` — check tee time availability
 - `handoff` — generate self-contained session handoff
 - `interactive-review-doc` — create interactive HTML review docs
@@ -33,6 +34,7 @@ In Claude Code:
 
 - `/execute-plan` — execute a written plan
 - `/fart-sniffing-detection [level] [target]` — run the skill above. Target = PR number, git range, `--staged`, or auto-detect current branch's open PR. Aliases: `/ptvm`, `/prove-the-value-motherfucker`.
+- `/feedback-triage <source>` — triage a pasted feedback blob from a named source (runs the `feedback-triage` skill)
 - `/granola-sync` — sync recent Granola meetings
 
 ## Short-name resolution (`/ptv` returning "Unknown command")
