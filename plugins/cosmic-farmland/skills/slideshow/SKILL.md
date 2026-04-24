@@ -1,6 +1,6 @@
 ---
 name: slideshow
-description: "Generate an on-brand LinkedIn/Instagram carousel (or any PDF slide deck) from a topic or outline using reusable HTML templates. Trigger when the user says 'slideshow', 'carousel', 'LinkedIn post with slides', 'make slides', 'turn this into a carousel', 'deck for LinkedIn', or asks to package content (a thread, a release note, a lesson, a teardown) as a visual post. Produces numbered HTML slides, per-slide PNGs, a combined PDF, and a draft caption."
+description: "Generate an on-brand LinkedIn/Instagram carousel from a topic or outline using reusable HTML templates. Produces numbered HTML slides, per-slide PNGs, a combined PDF, and a draft caption. Triggers include 'slideshow', 'carousel', 'LinkedIn post with slides', 'make slides', 'turn this into a carousel', 'deck for LinkedIn'."
 ---
 
 # Slideshow -- On-brand Carousel Builder
@@ -50,6 +50,10 @@ All templates live in `templates/`. Each is a standalone HTML file sized 1080x13
 | `slide-last-cta.html` | Last slide. Closing line + CTA + handle. |
 
 Prefer variety across a deck -- don't stack 5 bullet slides in a row. Mix stat/quote/bullets/code to create rhythm.
+
+**Size limits (avoid overflow):** bullets max 5, numbered steps max 5, code snippets max 12 lines, terminal output max 10 lines. Beyond these, content will clip the 1350px canvas.
+
+**Fonts:** `_base.css` references Iowan Old Style, Inter, and JetBrains Mono. These are available on macOS or degrade to Palatino/system-ui/Menlo fallbacks. On Linux/CI, install those fonts or ship webfonts in `assets/fonts/` + an `@font-face` block.
 
 ## Slot conventions
 

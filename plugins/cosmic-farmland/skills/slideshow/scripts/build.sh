@@ -54,12 +54,21 @@ chrome="$(find_chrome)" || {
 echo "chrome: $chrome"
 echo "dir:    $dir"
 
+if [[ ! -f "$dir/_base.css" ]]; then
+  echo "error: missing _base.css in $dir -- slides will render unstyled." >&2
+  echo "hint: copy templates/_base.css into the output dir before building." >&2
+  exit 66
+fi
+
 shopt -s nullglob
 slides=( "$dir"/slide-*.html )
 if [[ ${#slides[@]} -eq 0 ]]; then
   echo "error: no slide-*.html files in $dir" >&2
   exit 66
 fi
+
+log="$dir/.slideshow-build.log"
+: > "$log"
 
 # Sort slides by filename so slide-01 comes before slide-02 ... slide-10.
 IFS=$'\n' slides=( $(printf '%s\n' "${slides[@]}" | sort) )
@@ -72,16 +81,19 @@ for slide in "${slides[@]}"; do
   base="$(basename "$slide" .html)"
   out="$dir/$base.png"
   echo "  -> $base.png"
-  "$chrome" \
-    --headless=new \
-    --disable-gpu \
-    --no-sandbox \
-    --hide-scrollbars \
-    --default-background-color=00000000 \
-    --window-size=1080,1350 \
-    --screenshot="$out" \
-    "file://$slide" \
-    >/dev/null 2>&1
+  if ! "$chrome" \
+      --headless=new \
+      --disable-gpu \
+      --no-sandbox \
+      --hide-scrollbars \
+      --default-background-color=00000000 \
+      --window-size=1080,1350 \
+      --screenshot="$out" \
+      "file://$slide" \
+      >>"$log" 2>&1; then
+    echo "error: chrome failed rendering $slide -- see $log" >&2
+    exit 1
+  fi
 done
 
 # 2) Build a combined print HTML that embeds the PNGs we just rendered,
@@ -111,17 +123,19 @@ HEAD
 pdf_out="$dir/slideshow.pdf"
 echo "  -> slideshow.pdf"
 
-"$chrome" \
-  --headless=new \
-  --disable-gpu \
-  --no-sandbox \
-  --no-pdf-header-footer \
-  --print-to-pdf-no-header \
-  --print-to-pdf="$pdf_out" \
-  "file://$print_html" \
-  >/dev/null 2>&1
+if ! "$chrome" \
+    --headless=new \
+    --disable-gpu \
+    --no-sandbox \
+    --no-pdf-header-footer \
+    --print-to-pdf="$pdf_out" \
+    "file://$print_html" \
+    >>"$log" 2>&1; then
+  echo "error: chrome failed printing PDF -- see $log" >&2
+  exit 1
+fi
 
-rm -f "$print_html"
+rm -f "$print_html" "$log"
 
 echo
 echo "done."
