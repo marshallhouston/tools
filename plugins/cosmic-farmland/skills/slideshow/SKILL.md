@@ -63,6 +63,19 @@ Common slots:
 - `{{ATTRIBUTION}}` -- quote byline
 - `{{CTA}}` / `{{HANDLE}}` -- closing slide only
 
+### Repeating slots
+
+Bullets and numbered-step templates ship with a maximum set of rows (5 bullets,
+3 steps). For fewer rows, **delete the extra `<li>` blocks**. For more steps,
+duplicate the last `<li>` block before filling. Never leave a placeholder like
+`{{BULLET_5}}` in the final HTML -- it will render literally.
+
+### Code highlighting
+
+`slide-content-code.html` renders plain text monochrome by default. To colorize,
+hand-wrap tokens: `<span class="keyword">def</span>`, `<span class="string">"x"</span>`,
+`<span class="comment"># ...</span>`. There is no auto-tokenizer.
+
 ## How to build a deck
 
 1. **Plan the slides.** Write the slide list first as plain text -- slide number, template choice, one-line content summary. Get approval from the user if they gave you latitude, or proceed directly if they gave you a concrete outline.
