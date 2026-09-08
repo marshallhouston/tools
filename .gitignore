@@ -4,3 +4,7 @@ out/
 __pycache__/
 
 .claude/
+
+# slideshow build artifacts: build.sh writes them beside each deck's slides
+posts/**/*.png
+posts/**/*.pdf

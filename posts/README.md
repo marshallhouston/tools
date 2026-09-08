@@ -2,10 +2,10 @@
 
 source files for linkedin/instagram carousel decks. html + caption + per-deck `_base.css` copy.
 
-pngs and pdfs are generated artifacts and live in `out/` (gitignored). regenerate with:
+pngs and pdfs are generated artifacts. build.sh writes them next to the deck's slides, and they are gitignored. regenerate with:
 
 ```
-bash plugins/cosmic-farmland/skills/slideshow/scripts/build.sh posts/<deck-name>
+bash plugins/cosmic-farmland-content/skills/slideshow/scripts/build.sh posts/<deck-name>
 ```
 
 ## ship-classifier (primary)
@@ -31,4 +31,4 @@ each has voice issues flagged during review (linkedin-coach surface, listicle dr
 
 ## voice rules
 
-before editing any slide, re-read `plugins/cosmic-farmland/skills/slideshow/VOICE.md`. mechanical checks live in `plugins/cosmic-farmland/skills/slideshow/scripts/check.sh`.
+before editing any slide, re-read `plugins/cosmic-farmland-content/skills/slideshow/VOICE.md`. mechanical checks live in `plugins/cosmic-farmland-content/skills/slideshow/scripts/check.sh`.
